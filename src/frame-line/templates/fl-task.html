@@ -1,7 +1,7 @@
 <div id="fl_experiment_modal" class="modal" tabindex="-1">
   <div class="modal-dialog modal-fullscreen">
     <div class="modal-content">
-      <div class="modal-header">
+      <div class="modal-header" style="visibility: hidden;">
         <h5 id="progress-bar" class="text-center  bolded-blue data-i18n="></h5>
         <div id="task_type" data-type="{{ config.task_type }}"></div>
       </div>
@@ -10,6 +10,10 @@
             <i id="up_btn" class="bi bi-arrow-up-square display-3" style="visibility: hidden; margin-top: 30%;"></i>
             <canvas id='prompt_canvas'></canvas>
             <i id="down_btn" class="bi bi-arrow-down-square display-3" style="visibility: hidden; margin-top: 30%;"></i>
+            <div style="margin: auto; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                <h2 id="popup_trial_num" class="bolded-blue text-center" style="margin: auto; visibility: hidden;"></h2>
+                <h4 id="popup_instructions" class="text-center" style="margin: auto; visibility: hidden;"></h4>
+            </div>
             <img id="before_loading_response" class="mx-auto d-block" src="../img/ajax-loader.gif"
                  style="visibility: hidden; position: absolute; top: 50%">
         </div>
@@ -33,11 +37,12 @@
         let random_trials = LITW.study.params.tasks.sort(() => 0.5 - Math.random())
                                                    .slice(0, LITW.study.params.task_qtd);
         LITW.study.frameline.setup_canvas(random_trials, "prompt_canvas", window.innerWidth*0.8, window.innerHeight*0.8,
-            "down_btn", "up_btn", "before_loading_response", true);
+            "down_btn", "up_btn", "before_loading_response", 'popups_box', true);
     }
 
     function initNextTrial() {
-        let trialStarted = LITW.study.frameline.start_next_trial(prompt_show_time=5000,
+        let trialStarted = LITW.study.frameline.start_next_trial(
+            prompt_show_time=5000,
             prompt_callback= ()=>{
                 document.getElementById("progress-bar").textContent =
                     `${$.i18n('study-fl-progress-trial')} (${task_type}):
@@ -46,7 +51,9 @@
             },
             response_callback= ()=>{
                 document.getElementById("doneButton").style.visibility = "visible";
-            }
+            },
+            is_practice = false,
+            task_type = task_type
         )
         if(!trialStarted) {
             finishExperiment();

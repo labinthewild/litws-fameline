@@ -35,7 +35,7 @@
         let canvas_width = (window.innerWidth < 700) ? 300 : 600;
         let canvas_height = 300;
         LITW.study.frameline.setup_canvas(practice_trial, "prompt_canvas", canvas_width, canvas_height,
-            "down_btn", "up_btn", "before_loading_response", false);
+            "down_btn", "up_btn", "before_loading_response", null, false);
         startPractice();
     }
 
@@ -73,7 +73,7 @@
         document.getElementById("results-two").textContent = 
             `${$.i18n('study-fl-practice-results')}: ${trial_result.error_perc}%`;
         let result_comment = $.i18n('study-fl-practice-results-bad');
-        if(trial_result.error_perc <=15) {
+        if(trial_result.error_perc <=10) {
             result_comment = $.i18n('study-fl-practice-results-good');
         }
         document.getElementById("results-comment").textContent = result_comment;   

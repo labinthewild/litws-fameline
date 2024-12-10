@@ -110,13 +110,12 @@
             if (properties.useLoadingEffect) {
                 showLoadingIcon();
             }
-            window.setTimeout(function () {
-                if (properties.hideOnComplete) {
-                    hideNextButton();
-                }
-                hideLoadingIcon();
-                properties.fn(validatedResponse);
-            }, ((properties.useLoadingEffect) ? properties.loadingTime : 0));
+            if (properties.hideOnComplete) {
+                hideNextButton();
+            }
+            properties.fn(validatedResponse);
+            window.setTimeout(hideLoadingIcon, 
+                ((properties.useLoadingEffect) ? properties.loadingTime : 0));
         },
 
         /**

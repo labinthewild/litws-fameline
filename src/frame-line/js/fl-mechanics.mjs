@@ -4,6 +4,8 @@ let BTN_MINUS = null;
 let WAIT_ANIMATION = null;
 let RANDOM_POSITION = true;
 let BOX_PLACING = {X:0 ,Y:0};
+let RESPONSE = false;
+let POPUPS = null;
 
 // TODO: Create object for this?
 let TRIALS = [];
@@ -23,7 +25,7 @@ let current_line_length = 0;
  * @param random_response_positions Indicate if the response box should be drawn in random parts of the canvas (recommended == true).
  */
 const setup_canvas = (trials, canvas_html_id, canvas_width, canvas_height, button_plus_id, button_minus_id,
-                      wait_element_id, random_response_positions = true) => {
+                      wait_element_id, popup_id, random_response_positions = true) => {
     TRIALS = trials;
     current_trial_count = 0;
     current_box_size = 0;
@@ -35,6 +37,9 @@ const setup_canvas = (trials, canvas_html_id, canvas_width, canvas_height, butto
     BTN_PLUS = document.getElementById(button_plus_id);
     WAIT_ANIMATION = document.getElementById(wait_element_id);
     RANDOM_POSITION = random_response_positions;
+    RESPONSE = false;
+    POPUPS = {trial_num: document.getElementById("popup_trial_num"),
+                instructions: document.getElementById("popup_instructions")};
 
     let increment = 0;
     let interval = null;
@@ -44,14 +49,16 @@ const setup_canvas = (trials, canvas_html_id, canvas_width, canvas_height, butto
                 event.preventDefault();
                 interval = setInterval(
                     () => {
-                        increase_line_length(++increment)
+                        if (RESPONSE) 
+                            increase_line_length(++increment)
                     },
                     100);
             } else if (event.code === 'ArrowUp') {
                 event.preventDefault();
                 interval = setInterval(
                     () => {
-                        decrease_line_length(++increment)
+                        if (RESPONSE) 
+                            decrease_line_length(++increment)
                     },
                     100);
             }
@@ -134,6 +141,8 @@ const draw_trial_result = (finished_trial) => {
     ctx.stroke();
     //RESPONSE
     ctx.strokeRect((boxResponseCenter-(boxResponseSize/2)), BOX_PLACING.Y, boxResponseSize, boxResponseSize);
+    ctx.strokeStyle = finished_trial.error_perc <= 10 ? "#00fe11" : "#ff0000";
+    ctx.lineWidth = 3.;
     ctx.beginPath();
     ctx.moveTo(boxResponseCenter, BOX_PLACING.Y);
     ctx.lineTo(boxResponseCenter, BOX_PLACING.Y + finished_trial.response);
@@ -153,32 +162,69 @@ const redraw_canvas = (box_size, line_length) => {
     ctx.stroke();
 }
 
-const start_next_trial = (prompt_show_time=5000, prompt_callback=()=>{}, response_callback=()=>{}) => {
+const popup_text = (text, loc, time) => {
+    const ctx = CANVAS.getContext("2d");
+    ctx.clearRect(0, 0, CANVAS.width, CANVAS.height);
+    loc.innerHTML = text;
+    loc.style.visibility = "visible";
+    setTimeout(() => {
+        loc.innerHTML = "";
+        loc.style.visibility = "hidden";
+    }, time)
+}
+
+const start_next_trial = (prompt_show_time=5000, 
+                            prompt_callback=()=>{}, 
+                            response_callback=()=>{}, 
+                            is_practice = true, 
+                            task_type = undefined) => {
+    const instruction_show_time = 5000;
+    const counter_show_time = 2000;
     if(++current_trial_count <= TRIALS.length) {
         let current_trial = TRIALS[current_trial_count-1];
         prompt_callback();
         set_box_to_center();
         current_line_length = current_trial.promptLineLength;
         current_box_size = current_trial.promptBoxSize;
-        redraw_canvas(current_box_size, current_line_length);
-        setTimeout( () => {
-            CANVAS.style.visibility = 'hidden';
-            BTN_PLUS.style.visibility = 'hidden';
-            BTN_MINUS.style.visibility = 'hidden';
-            WAIT_ANIMATION.style.visibility = 'visible';
-            setTimeout(()=>{
-                response_callback();
-                if(RANDOM_POSITION) set_box_to_random(current_box_size);
-                CANVAS.style.visibility = 'visible';
-                BTN_PLUS.style.visibility = 'visible';
-                BTN_MINUS.style.visibility = 'visible';
-                WAIT_ANIMATION.style.visibility = 'hidden';
+        if (!is_practice) {
+            if (current_trial_count === 1) {
+                popup_text($.i18n(`study-fl-pretrial-instructions-${task_type}`),
+                            POPUPS.instructions,
+                            instruction_show_time);
+            } else {
+                popup_text(`${$.i18n(`task-type-${task_type}`)}: ${current_trial_count - 1}/${TRIALS.length}`,
+                                    POPUPS.trial_num,
+                                    counter_show_time / 2);
+                setTimeout(() => {
+                    popup_text(`${$.i18n(`task-type-${task_type}`)}: ${current_trial_count}/${TRIALS.length}`,
+                                        POPUPS.trial_num,
+                                        counter_show_time / 2);
+                    }, counter_show_time / 2)
+            }
+        }
+        setTimeout(() => {
+            redraw_canvas(current_box_size, current_line_length);
+            setTimeout( () => {
+                RESPONSE = false;
+                CANVAS.style.visibility = 'hidden';
+                BTN_PLUS.style.visibility = 'hidden';
+                BTN_MINUS.style.visibility = 'hidden';
+                WAIT_ANIMATION.style.visibility = 'visible';
+                setTimeout(()=>{
+                    response_callback();
+                    RESPONSE = true;
+                    CANVAS.style.visibility = 'visible';
+                    BTN_PLUS.style.visibility = 'visible';
+                    BTN_MINUS.style.visibility = 'visible';
+                    WAIT_ANIMATION.style.visibility = 'hidden';
 
-                current_box_size = current_trial.responseBoxSize;
-                current_line_length = 0;
-                redraw_canvas(current_box_size, current_line_length);
-            }, prompt_show_time)
-        }, prompt_show_time);
+                    current_box_size = current_trial.responseBoxSize;
+                    if(RANDOM_POSITION) set_box_to_random(current_box_size);
+                    current_line_length = 0;
+                    redraw_canvas(current_box_size, current_line_length);
+                }, prompt_show_time)
+            }, prompt_show_time);
+        }, is_practice ? 0 : current_trial_count !== 1 ? counter_show_time : instruction_show_time);
         return true;
     } else {
         document.onkeydown = () => {};
@@ -187,6 +233,7 @@ const start_next_trial = (prompt_show_time=5000, prompt_callback=()=>{}, respons
 }
 
 const finish_current_trial = (task_type) => {
+    RESPONSE = false;
     if(current_trial_count <= TRIALS.length) {
         TRIALS[current_trial_count-1].response = current_line_length;
         current_line_length = 0;
@@ -217,4 +264,9 @@ const get_total_trials_number = () => {
     return TRIALS.length;
 }
 
-export {get_current_trial_number, get_total_trials_number, setup_canvas, start_next_trial, finish_current_trial, draw_trial_result}
+export {get_current_trial_number, 
+        get_total_trials_number, 
+        setup_canvas,  
+        start_next_trial, 
+        finish_current_trial, 
+        draw_trial_result}

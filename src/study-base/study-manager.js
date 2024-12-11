@@ -223,7 +223,7 @@ module.exports = (function(exports) {
 	//TODO Should be better supported by the ENGINE to setup HTML and show "SLIDE"
 	function showResults(results = {}, showFooter = false) {
 		let results_div = $("#results");
-		if('PID' in LITW.data.getURLparams) {
+		if('PID' in LITW.data.getURLparams()) {
 			//REASON: Default behavior for returning a unique PID when collecting data from other platforms
 			results.code = LITW.data.getParticipantId();
 		}

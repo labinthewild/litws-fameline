@@ -163,11 +163,30 @@ let advance_study = () => {
         document.getElementById('btn-next-page').style.display = 'block';
     }
 
-    if (slide.type && slide.type === SLIDE_TYPE.SHOW_SLIDE) {
-        advance_result = show_slide(slide);
+    //TODO: likely better to use a Strategy pattern
+    if('type' in slide) {
+        switch (slide.type) {
+            case SLIDE_TYPE.SHOW_SLIDE:
+                advance_result = show_slide(slide);
+                break;
+            case SLIDE_TYPE.CALL_FUNCTION:
+                if ('call_fn' in slide && typeof(slide.call_fn) === "function") {
+                    slide.call_fn();
+                    advance_result = true;
+                } else {
+                    advance_result = false;
+                }
+                break;
+            default:
+                console.error(`Could not identify SLIDE.type ${slide.type} for SLIDE ${slide.name}`);
+                advance_result = false;
+        }
+
     }
 
-    LITW.tracking.recordSlideVisit(slide.name);
+    if(advance_result) {
+        LITW.tracking.recordSlideVisit(slide.name);
+    }
     return advance_result;
 };
 

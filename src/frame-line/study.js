@@ -290,12 +290,15 @@ module.exports = (function(exports) {
 	}
 
 	function showResults(results = {}, showFooter = false) {
+		let results_div = $("#results");
+		let recom_studies = [];
+		LITW.engage.getStudiesRecommendation(config.study_id, (studies) => {recom_studies = studies});
 		if('PID' in LITW.data.getURLparams()) {
 			//REASON: Default behavior for returning a unique PID when collecting data from other platforms
 			results.code = LITW.data.getParticipantId();
 		}
 
-		$("#results").html(
+		results_div.html(
 			resultsTemplate({
 				data: results
 			}));
@@ -305,11 +308,11 @@ module.exports = (function(exports) {
 					share_url: window.location.href,
 					share_title: $.i18n('litw-irb-header'),
 					share_text: $.i18n('litw-template-title'),
-					more_litw_studies: config.study_recommendation
+					more_litw_studies: recom_studies
 				}
 			));
 		}
-		$("#results").i18n();
+		results_div.i18n();
 		LITW.utils.showSlide("results");
 	}
 
